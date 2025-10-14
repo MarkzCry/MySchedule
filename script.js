@@ -66,22 +66,21 @@ document.addEventListener('DOMContentLoaded', () => {
     // =============================
     function initialLoad() {
         if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('/service-worker.js')
+            // Use a relative path for the service worker
+            navigator.serviceWorker.register('service-worker.js')
                 .then(registration => console.log('Service Worker registered with scope:', registration.scope))
                 .catch(error => console.error('Service Worker registration failed:', error));
         }
         loadSettings();
-        loadSchedule(); // This will now use the robust loading logic
+        loadSchedule();
         setInterval(updateNextShiftTicker, 60000);
         addTouchListeners();
     }
 
-    // UPDATED loadSchedule function for GitHub Pages
     async function loadSchedule() {
         const savedUrl = appState.serverUrl;
         let loadedFromServer = false;
 
-        // First, try to fetch from the saved server IP
         if (savedUrl && savedUrl.startsWith('http')) {
             try {
                 statusEl.textContent = 'Fetching schedule from server...';
@@ -97,16 +96,13 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        // If server fetch failed or wasn't tried, use local/fallback data
         if (!loadedFromServer) {
             try {
                 statusEl.textContent = 'Loading saved/local schedule...';
-                // Try localStorage first
                 const localData = getFromLocalStorage('scheduleData');
                 if (localData) {
                     processAndRender(localData);
                 } else {
-                    // Fallback to the placeholder file in the public folder
                     const res = await fetch('combined_schedule.json');
                     const data = await res.json();
                     processAndRender(data);
@@ -450,7 +446,7 @@ document.addEventListener('DOMContentLoaded', () => {
     settingsSaveBtn.addEventListener('click', () => {
         triggerHapticFeedback();
         const newUrl = serverIpInput.value.trim();
-        appState.serverUrl = newUrl; // Allow it to be empty
+        appState.serverUrl = newUrl;
         appState.payRates.walmart = parseFloat(walmartRateInput.value) || 0;
         appState.payRates.canes = parseFloat(canesRateInput.value) || 0;
         appState.takeHomePercent = parseInt(takeHomePercentInput.value, 10) || 87;
