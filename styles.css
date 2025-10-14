@@ -1,0 +1,216 @@
+/* --- Global Styles & Variables --- */
+:root {
+  --font-family-main: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --bg-primary: #f4f7fa;
+  --bg-secondary: #ffffff;
+  --bg-tertiary: #e9eef2;
+  --bg-overlay: rgba(30, 41, 59, 0.5);
+  --text-primary: #1e293b;
+  --text-secondary: #64748b;
+  --text-tertiary: #94a3b8;
+  --text-on-accent: #ffffff;
+  --accent-primary: #3b82f6;
+  --accent-primary-hover: #2563eb;
+  --accent-secondary: #e0f2fe;
+  --border-primary: #e2e8f0;
+  --border-secondary: #cbd5e1;
+  --walmart-bg: #e0f2fe;
+  --walmart-text: #0284c7;
+  --canes-bg: #fee2e2;
+  --canes-text: #dc2626;
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+  --border-radius-sm: 0.375rem;
+  --border-radius-md: 0.5rem;
+  --border-radius-lg: 0.75rem;
+  --border-radius-full: 9999px;
+}
+body.dark-mode {
+  --bg-primary: #1e293b;
+  --bg-secondary: #334155;
+  --bg-tertiary: #475569;
+  --text-primary: #f1f5f9;
+  --text-secondary: #cbd5e1;
+  --text-tertiary: #94a3b8;
+  --border-primary: #475569;
+  --border-secondary: #64748b;
+  --accent-secondary: #3b82f6;
+  --text-on-accent: #ffffff;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+body {
+  font-family: var(--font-family-main);
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  line-height: 1.5;
+  transition: background-color 0.3s ease;
+  overflow: auto; /* Changed from hidden to allow scrolling by default */
+}
+body.modal-open {
+    overflow: hidden; /* NEW: Class to prevent scrolling when modals are open */
+}
+.app {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 1.5rem 1rem;
+  transition: transform 0.3s ease;
+}
+header {
+  display: flex; justify-content: space-between; align-items: flex-start;
+  padding: 1rem; background: linear-gradient(120deg, #4776E6 0%, #8E54E9 100%);
+  color: var(--text-on-accent); border-radius: var(--border-radius-lg);
+  margin-bottom: 1.5rem; box-shadow: var(--shadow-lg);
+}
+.header-content { display: flex; flex-direction: column; }
+header h1 { font-size: 1.75rem; font-weight: 700; margin: 0; }
+.header-details { display: flex; align-items: center; gap: 0.75rem; margin-top: 0.5rem; font-weight: 500; opacity: 0.9; flex-wrap: wrap; }
+.total-hours-badge { background-color: rgba(255, 255, 255, 0.2); padding: 0.25rem 0.625rem; border-radius: var(--border-radius-full); font-size: 0.875rem; }
+#refreshBtn, #settingsBtn {
+  background: rgba(255, 255, 255, 0.15); border: 1px solid rgba(255, 255, 255, 0.3);
+  color: white; width: 44px; height: 44px; border-radius: var(--border-radius-md);
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: background-color 0.2s ease, transform 0.15s ease;
+}
+#refreshBtn:hover, #settingsBtn:hover { background: rgba(255, 255, 255, 0.25); }
+#refreshBtn:active, #settingsBtn:active { transform: scale(0.9); transition-duration: 0.05s; }
+.status-banner { padding: 0.75rem 1rem; border-radius: var(--border-radius-md); background-color: var(--accent-secondary); color: var(--text-secondary); text-align: center; font-weight: 500; margin-bottom: 1.5rem; border: 1px solid var(--border-primary); }
+@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+#refreshBtn.loading svg { animation: spin 1s linear infinite; }
+.theme-switcher { position: relative; display: inline-block; width: 50px; height: 28px; }
+.theme-toggle-checkbox { opacity: 0; width: 0; height: 0; }
+.theme-toggle-label { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(255, 255, 255, 0.3); transition: .4s; border-radius: 34px; }
+.theme-toggle-label:before { position: absolute; content: ""; height: 20px; width: 20px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
+.theme-toggle-checkbox:checked + .theme-toggle-label { background-color: #4f46e5; }
+.theme-toggle-checkbox:checked + .theme-toggle-label:before { transform: translateX(22px); }
+.header-actions { display: flex; align-items: center; gap: 1rem; }
+.view-switcher { display: flex; gap: 0.5rem; margin-bottom: 1.5rem; }
+.view-btn { padding: 0.5rem 1rem; border: none; border-radius: var(--border-radius-md); background-color: var(--bg-tertiary); color: var(--text-secondary); cursor: pointer; transition: all 0.2s ease; font-weight: 500; }
+.view-btn.active, .view-btn:hover { background-color: var(--accent-primary); color: var(--text-on-accent); }
+.controls-container { display: flex; justify-content: flex-end; margin-bottom: 1.5rem; gap: 1rem; flex-wrap: wrap; }
+.filter-container { display: flex; align-items: center; gap: 0.5rem; }
+.filter-btn, #export-csv, .calendar-nav-btn, #today-btn { padding: 0.5rem 1rem; border: none; border-radius: var(--border-radius-md); background-color: var(--bg-tertiary); color: var(--text-secondary); cursor: pointer; transition: background-color 0.2s, color 0.2s, transform 0.1s ease; }
+.filter-btn.active, .filter-btn:hover, #export-csv:hover, .calendar-nav-btn:hover, #today-btn:hover { background-color: var(--accent-primary); color: var(--text-on-accent); }
+.filter-btn:active, #export-csv:active, .calendar-nav-btn:active, #today-btn:active { transform: scale(0.95); transition-duration: 0.05s; }
+.shift-card .overlap-badge { background-color: #ef4444; color: white; font-size: 0.75rem; padding: 0.25rem 0.5rem; border-radius: 9999px; margin-left: 0.5rem; }
+.week-summary { text-align: center; font-weight: 600; color: var(--text-secondary); background-color: var(--bg-tertiary); }
+.calendar-container { background-color: var(--bg-secondary); border-radius: var(--border-radius-lg); padding: 1rem; box-shadow: var(--shadow-md); margin-bottom: 1.5rem; touch-action: pan-y; }
+.calendar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+.calendar-header h2 { font-size: 1.125rem; font-weight: 600; }
+.calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 0.5rem; text-align: center; }
+.calendar-grid > div { font-weight: 500; font-size: 0.875rem; }
+.day-name { color: var(--text-secondary); }
+.day-cell { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border-radius: var(--border-radius-full); cursor: pointer; transition: background-color 0.2s ease, color 0.2s ease, transform 0.1s ease; position: relative; }
+.day-cell:hover { background-color: var(--bg-tertiary); transform: scale(1.1); }
+.day-cell:active { transform: scale(0.95); }
+.day-cell.today { font-weight: 700; color: var(--accent-primary); border: 2px solid var(--accent-primary); }
+.day-cell.selected { background-color: var(--accent-primary); color: var(--text-on-accent); font-weight: 700; transform: scale(1.1); }
+.day-cell.has-shift::after { content: ''; position: absolute; bottom: 4px; left: 50%; transform: translateX(-50%); width: 5px; height: 5px; border-radius: 50%; background-color: var(--accent-primary); }
+.day-cell.selected.has-shift::after { background-color: var(--text-on-accent); }
+.day-cell.other-month { color: var(--text-tertiary); pointer-events: none; }
+.schedule-list-container { display: grid; gap: 1rem; }
+.shift-card { display: flex; gap: 1rem; background-color: var(--bg-secondary); padding: 1rem; border-radius: var(--border-radius-lg); box-shadow: var(--shadow-md); border-left: 5px solid; transition: transform 0.2s ease, box-shadow 0.2s ease; }
+.shift-card:hover { transform: translateY(-4px) scale(1.01); box-shadow: var(--shadow-lg); }
+.shift-card.walmart { border-color: var(--walmart-text); }
+.shift-card.canes { border-color: var(--canes-text); }
+.card-date { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; min-width: 50px; }
+.card-date .weekday { font-size: 0.875rem; font-weight: 600; color: var(--text-secondary); }
+.card-date .day { font-size: 1.75rem; font-weight: 700; line-height: 1.2; }
+.card-details { flex-grow: 1; display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; }
+.job-info .job-title { font-weight: 600; margin-bottom: 0.25rem; display: flex; align-items: center; }
+.job-info .time-badge { display: inline-flex; align-items: center; gap: 0.375rem; padding: 0.25rem 0.625rem; border-radius: var(--border-radius-full); font-size: 0.875rem; font-weight: 500; }
+.job-info .walmart { background-color: var(--walmart-bg); color: var(--walmart-text); }
+.job-info .canes { background-color: var(--canes-bg); color: var(--canes-text); }
+.card-hours { text-align: right; min-width: 60px; }
+.card-hours .hours { font-size: 1.125rem; font-weight: 600; }
+.card-hours .store { font-size: 0.875rem; color: var(--text-secondary); }
+.modal { position: fixed; inset: 0; background-color: var(--bg-overlay); display: flex; align-items: center; justify-content: center; z-index: 1000; opacity: 1; transition: opacity 0.3s ease; }
+@supports (backdrop-filter: blur(8px)) { .modal { backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); } }
+.modal.hidden { opacity: 0; pointer-events: none; }
+.modal-inner { background: var(--bg-secondary); padding: 2rem; border-radius: var(--border-radius-lg); box-shadow: var(--shadow-lg); width: 90%; max-width: 400px; transform: scale(1); transition: transform 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28); }
+.modal.hidden .modal-inner { transform: scale(0.95); }
+.modal-inner h2 { margin: 0 0 0.5rem 0; font-size: 1.5rem; font-weight: 700; }
+.modal-inner p { color: var(--text-secondary); margin-bottom: 1.5rem; }
+#twoFaInput { width: 100%; padding: 0.75rem; border: 2px solid var(--border-primary); border-radius: var(--border-radius-md); font-size: 1.5rem; font-weight: 600; text-align: center; letter-spacing: 0.5em; background-color: var(--bg-primary); transition: border-color 0.2s ease, box-shadow 0.2s ease; }
+#twoFaInput:focus { outline: none; border-color: var(--accent-primary); box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3); }
+.modal-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-top: 1.5rem; }
+.modal-actions button { padding: 0.75rem 1rem; border: none; border-radius: var(--border-radius-md); font-size: 1rem; font-weight: 600; cursor: pointer; transition: background-color 0.2s ease, transform 0.1s ease; }
+.modal-actions button:active { transform: scale(0.95); transition-duration: 0.05s; }
+.modal-actions .primary { background-color: var(--accent-primary); color: white; }
+.modal-actions .primary:hover { background-color: var(--accent-primary-hover); }
+.modal-actions .secondary { background-color: var(--bg-tertiary); color: var(--text-secondary); }
+.modal-actions .secondary:hover { background-color: var(--border-primary); }
+.settings-form { display: flex; flex-direction: column; gap: 1rem; }
+.form-group { display: flex; flex-direction: column; }
+.form-group label { margin-bottom: 0.25rem; font-weight: 500; color: var(--text-secondary); }
+.form-group input { padding: 0.75rem; border: 1px solid var(--border-primary); border-radius: var(--border-radius-md); background-color: var(--bg-primary); color: var(--text-primary); transition: border-color 0.2s ease, box-shadow 0.2s ease; }
+.form-group input:focus { outline: none; border-color: var(--accent-primary); box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3); }
+.hidden { display: none !important; }
+.view-title { font-size: 1.25rem; font-weight: 600; margin-bottom: 1rem; }
+.chart-container { background-color: var(--bg-secondary); padding: 1rem; border-radius: var(--border-radius-lg); box-shadow: var(--shadow-md); margin-bottom: 1.5rem; }
+.paycheck-estimate-card { background-color: var(--bg-secondary); padding: 1rem; border-radius: var(--border-radius-lg); box-shadow: var(--shadow-md); }
+.pull-to-refresh { position: fixed; top: 0; left: 0; right: 0; text-align: center; background: var(--bg-tertiary); padding: 1rem; z-index: -1; opacity: 0; transition: opacity 0.3s ease, transform 0.3s ease; transform: translateY(-100%); font-weight: 500; color: var(--text-secondary); }
+.pull-to-refresh.visible { opacity: 1; transform: translateY(0); }
+@media (max-width: 819px) { /* Changed from 640px to affect more tablet sizes */
+  .app { padding: 1rem 0.5rem; }
+  header h1 { font-size: 1.5rem; }
+  .card-details { flex-direction: column; align-items: flex-start; gap: 0.5rem; }
+  .card-hours { position: absolute; top: 1rem; right: 1rem; }
+  .shift-card { position: relative; }
+  .controls-container { flex-direction: column; align-items: stretch; }
+  .filter-container { justify-content: space-between; }
+}
+/* NEW: PC Friendliness Styles */
+@media (min-width: 820px) {
+    #main-content {
+        display: grid;
+        grid-template-columns: 350px 1fr; /* Calendar on left, list on right */
+        gap: 1.5rem;
+        align-items: flex-start;
+    }
+    #schedule-view {
+        /* The grid layout is now on main-content */
+        display: contents; 
+    }
+    .calendar-container {
+        margin-bottom: 0; /* Remove bottom margin as it's now side-by-side */
+    }
+    #analytics-view {
+        grid-column: 1 / -1; /* Make analytics view span both columns */
+    }
+    .controls-container {
+        grid-column: 1 / -1; /* Make controls span both columns */
+        margin-bottom: 1rem;
+    }
+}
+/* NEW: Hold-to-Refresh Button Styles */
+#refreshBtn {
+    position: relative; /* Required to position the progress bar inside */
+    overflow: hidden;   /* Keeps the progress bar contained */
+}
+
+.hold-progress {
+    position: absolute;
+    inset: 0;
+    background: rgba(255, 255, 255, 0.3);
+    
+    /* Start with zero width and position on the left */
+    transform: scaleX(0);
+    transform-origin: left;
+    
+    /* Animate the transform property, but ONLY when the .holding class is removed */
+    transition: transform 0.2s ease-out; 
+}
+
+/* When the button is being held, this class is added */
+#refreshBtn.holding .hold-progress {
+    /* The duration here (1.5s) controls how long you have to hold */
+    transition-duration: 1.5s;
+    transition-timing-function: linear;
+    transform: scaleX(1); /* Animate to full width */
+}
+/* NEW: Pull to Refresh Icon Rotation */
+.pull-to-refresh .icon {
+    transition: transform 0.2s ease; /* Smooth rotation */
+}
