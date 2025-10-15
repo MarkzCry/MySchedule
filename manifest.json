@@ -1,7 +1,7 @@
 {
   "name": "MySchedule",
   "short_name": "Schedule",
-  "start_url": "/my-schedule/",
+  "start_url": "/MySchedule/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#4776E6",
@@ -21,3 +21,4 @@
     }
   ]
 }
+
