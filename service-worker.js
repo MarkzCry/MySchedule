@@ -1,11 +1,10 @@
 const CACHE_NAME = 'dual-schedule-cache-v1';
+// IMPORTANT: Removed '/' and '/index.html' from this list
 const urlsToCache = [
-  '/',
-  '/index.html',
-  '/styles.css',
-  '/script.js',
-  '/manifest.json',
-  '/logo.png' // Added your logo here
+  'styles.css',
+  'script.js',
+  'manifest.json',
+  'logo.png'
 ];
 
 // Install the service worker and cache all the app's assets
