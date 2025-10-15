@@ -55,7 +55,7 @@ document.addEventListener('DOMContentLoaded', () => {
         allShifts: [],
         selectedDate: new Date(),
         currentFilter: 'all',
-        payRates: { walmart: 13.87, canes: 14.25 },
+        payRates: { walmart: 16, canes: 14.25 },
         takeHomePercent: 87,
         serverUrl: "", // Start with no default server URL
         currentView: 'schedule'
@@ -676,3 +676,4 @@ document.addEventListener('DOMContentLoaded', () => {
         takeHomePercentInput.value = appState.takeHomePercent || '0';
     }
 });
+
