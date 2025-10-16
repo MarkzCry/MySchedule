@@ -98,53 +98,40 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     async function loadSchedule() {
-        const savedUrl = appState.serverUrl;
-        let loadedFromServer = false;
-
-        // First, try to load whatever is saved locally. This ensures that if the server
-        // is offline, we immediately show the last good data without waiting for a failed request.
+        // Step 1: Always load local data first for instant, offline access.
+        statusEl.textContent = 'Loading saved schedule...';
         const localData = getFromLocalStorage('scheduleData');
-        if (localData && localData.allShifts && localData.allShifts.length > 0) {
-            console.log("Displaying schedule from local storage first.");
-            processAndRender(localData);
+        if (localData) {
+            processAndRender(localData); // Render what we have immediately.
         } else {
-             renderEmptyState(); // Show empty state if nothing is stored
+            renderEmptyState(); // Or show empty if nothing's saved.
         }
 
-
-        // Now, if a server URL is configured, try to fetch fresh data in the background.
+        // Step 2: Try to get an update from the server in the background.
+        const savedUrl = appState.serverUrl;
         if (savedUrl && savedUrl.startsWith('http')) {
+            statusEl.textContent = 'Checking for updates...';
             try {
-                statusEl.textContent = 'Checking for schedule updates...';
                 const res = await fetch(`${savedUrl}/combined_schedule`, { cache: 'no-store' });
-                if (!res.ok) throw new Error(`Server returned status: ${res.status}`);
-
+                if (!res.ok) throw new Error(`Server status: ${res.status}`);
                 const serverData = await res.json();
-                
-                // CRITICAL FIX: Before saving, parse the shifts from the server data
-                const serverShifts = parseShifts(serverData);
 
-                // Only save and re-render if the server actually sent new shifts.
+                // Step 3: Check if the server data is valid before saving and updating the view.
+                const serverShifts = parseShifts(serverData);
                 if (serverShifts.length > 0) {
-                    console.log("Server returned new shifts. Updating schedule.");
-                    // We save the raw data, but the decision is based on the parsed shifts
-                    saveToLocalStorage('scheduleData', serverData); 
-                    processAndRender(serverData); // Re-render the UI with the fresh data
-                    loadedFromServer = true;
+                    saveToLocalStorage('scheduleData', serverData);
+                    processAndRender(serverData); // This will re-render with the new data.
                     statusEl.textContent = 'Schedule updated from server.';
                 } else {
-                    console.log("Server returned no shifts. Keeping existing local schedule.");
-                    statusEl.textContent = 'No new shifts found on server.';
+                    // If local data was already displayed, this message is more accurate.
+                    if (localData) {
+                         statusEl.textContent = 'Schedule is up-to-date.';
+                    }
                 }
             } catch (err) {
-                console.warn(`Could not fetch from server (${savedUrl}):`, err.message);
+                console.warn(`Failed to fetch update: ${err.message}`);
                 statusEl.textContent = 'Server offline. Using saved schedule.';
             }
-        }
-        
-        // If there's no server URL, ensure the final status message makes sense.
-        if (!savedUrl) {
-           statusEl.textContent = localData ? 'Displaying saved schedule.' : 'No schedule found.';
         }
     }
 
@@ -163,7 +150,7 @@ document.addEventListener('DOMContentLoaded', () => {
         detectOverlaps();
         updateNextShiftTicker();
         renderAll();
-        statusEl.textContent = 'Schedule loaded successfully.';
+        // statusEl.textContent = 'Schedule loaded successfully.'; // This is handled by loadSchedule now
     }
 
     function renderAll() {
@@ -398,7 +385,17 @@ document.addEventListener('DOMContentLoaded', () => {
             
             if (data.error) throw new Error(data.error);
 
-            await loadSchedule();
+            // SUCCESS: We received the new schedule.
+            // Now, validate it before saving.
+            const newShifts = parseShifts(data);
+            if (newShifts.length > 0) {
+                statusEl.textContent = 'Schedule refreshed successfully!';
+                saveToLocalStorage('scheduleData', data);
+                processAndRender(data);
+            } else {
+                statusEl.textContent = 'Refreshed, but no new shifts were found.';
+                // We deliberately do NOT save or clear the old data here.
+            }
 
         } catch (err) {
             console.error(err);
@@ -419,7 +416,16 @@ document.addEventListener('DOMContentLoaded', () => {
             const data = await res.json();
             if (data.error) throw new Error(data.error);
             
-            await loadSchedule();
+            // SUCCESS: We received the new schedule after 2FA.
+            // Now, validate it before saving.
+            const newShifts = parseShifts(data);
+            if (newShifts.length > 0) {
+                statusEl.textContent = 'Schedule refreshed successfully!';
+                saveToLocalStorage('scheduleData', data);
+                processAndRender(data);
+            } else {
+                statusEl.textContent = 'Refreshed, but no new shifts were found.';
+            }
 
         } catch (err) {
             console.error(err);
@@ -800,4 +806,3 @@ document.addEventListener('DOMContentLoaded', () => {
         takeHomePercentInput.value = appState.takeHomePercent || '0';
     }
 });
-
