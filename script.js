@@ -107,21 +107,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 const res = await fetch(`${savedUrl}/combined_schedule`, { cache: 'no-store' });
                 if (!res.ok) throw new Error(`Server returned status: ${res.status}`);
                 const data = await res.json();
-
-                // Check if the data from the server actually contains any shifts
-                const hasWalmartShifts = data.walmart?.payload?.weeks?.some(w => w.schedules?.length > 0);
-                const hasCanesShifts = Array.isArray(data.canes) && data.canes.length > 0;
-
-                if (hasWalmartShifts || hasCanesShifts) {
-                    // If there are shifts, save them and display them
-                    saveToLocalStorage('scheduleData', data);
-                    processAndRender(data);
-                    loadedFromServer = true;
-                } else {
-                    // If the server returns an empty schedule, don't save it.
-                    // This will cause the app to load your locally saved data instead.
-                    statusEl.textContent = 'Server returned no shifts. Using local data.';
-                }
+                saveToLocalStorage('scheduleData', data);
+                processAndRender(data);
+                loadedFromServer = true;
             } catch (err) {
                 console.warn(`Could not fetch from server (${savedUrl}):`, err.message);
                 statusEl.textContent = 'Server not found. Using local data.';
@@ -799,4 +787,3 @@ document.addEventListener('DOMContentLoaded', () => {
         takeHomePercentInput.value = appState.takeHomePercent || '0';
     }
 });
-
