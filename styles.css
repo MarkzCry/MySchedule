@@ -46,10 +46,10 @@ body {
   color: var(--text-primary);
   line-height: 1.5;
   transition: background-color 0.3s ease;
-  overflow: auto; /* Changed from hidden to allow scrolling by default */
+  overflow: auto;
 }
 body.modal-open {
-    overflow: hidden; /* NEW: Class to prevent scrolling when modals are open */
+    overflow: hidden;
 }
 .app {
   max-width: 800px;
@@ -93,7 +93,6 @@ header h1 { font-size: 1.75rem; font-weight: 700; margin: 0; }
 .filter-btn, #export-csv, .calendar-nav-btn, #today-btn { padding: 0.5rem 1rem; border: none; border-radius: var(--border-radius-md); background-color: var(--bg-tertiary); color: var(--text-secondary); cursor: pointer; transition: background-color 0.2s, color 0.2s, transform 0.1s ease; }
 .filter-btn.active, .filter-btn:hover, #export-csv:hover, .calendar-nav-btn:hover, #today-btn:hover { background-color: var(--accent-primary); color: var(--text-on-accent); }
 .filter-btn:active, #export-csv:active, .calendar-nav-btn:active, #today-btn:active { transform: scale(0.95); transition-duration: 0.05s; }
-.shift-card .overlap-badge { background-color: #ef4444; color: white; font-size: 0.75rem; padding: 0.25rem 0.5rem; border-radius: 9999px; margin-left: 0.5rem; }
 .week-summary { text-align: center; font-weight: 600; color: var(--text-secondary); background-color: var(--bg-tertiary); }
 .calendar-container { background-color: var(--bg-secondary); border-radius: var(--border-radius-lg); padding: 1rem; box-shadow: var(--shadow-md); margin-bottom: 1.5rem; touch-action: pan-y; }
 .calendar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
@@ -161,6 +160,19 @@ header h1 { font-size: 1.75rem; font-weight: 700; margin: 0; }
   .controls-container { flex-direction: column; align-items: stretch; }
   .filter-container { justify-content: space-between; }
 }
+
+/* --- NEW CARD OVERLAP BADGE --- */
+.card-overlap-badge {
+    background-color: #ef4444;
+    color: white;
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: var(--border-radius-full);
+    margin-top: 0.25rem; /* Adds a little space between the date and the badge */
+    letter-spacing: 0.5px;
+}
+
 /* NEW: PC Friendliness Styles */
 @media (min-width: 820px) {
     #main-content {
@@ -213,4 +225,10 @@ header h1 { font-size: 1.75rem; font-weight: 700; margin: 0; }
 /* NEW: Pull to Refresh Icon Rotation */
 .pull-to-refresh .icon {
     transition: transform 0.2s ease; /* Smooth rotation */
+}
+
+/* --- NEW --- Style for when the schedule list is updating */
+.schedule-list-container.schedule-loading .shift-card {
+    opacity: 0.4;
+    transition: opacity 0.3s ease-in-out;
 }
