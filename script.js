@@ -16,14 +16,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const todayBtn = document.getElementById('today-btn');
     const monthNameEl = document.getElementById('month-name');
     const filterBtns = document.querySelectorAll('.filter-btn');
-    const exportCsvBtn = document.getElementById('export-csv');
+    const exportPdfBtn = document.getElementById('export-csv');
     const nextShiftTickerEl = document.getElementById('next-shift-ticker');
     const twoFaModal = document.getElementById('twoFaModal');
     const twoFaInput = document.getElementById('twoFaInput');
     const twoFaSubmit = document.getElementById('twoFaSubmit');
     const twoFaCancel = document.getElementById('twoFaCancel');
 
-    // NEW: Settings Modal Elements
     const settingsBtn = document.getElementById('settingsBtn');
     const settingsModal = document.getElementById('settingsModal');
     const settingsSaveBtn = document.getElementById('settingsSave');
@@ -33,18 +32,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const takeHomePercentInput = document.getElementById('take-home-percent');
     const serverIpInput = document.getElementById('server-ip-input');
 
-    // NEW: View Switcher Elements
-    const mainContent = document.getElementById('main-content');
     const scheduleView = document.getElementById('schedule-view');
     const analyticsView = document.getElementById('analytics-view');
     const viewBtns = document.querySelectorAll('.view-btn');
 
-    // NEW: Analytics Elements
     const earningsChartCanvas = document.getElementById('earnings-chart');
     const paycheckEstimateEl = document.getElementById('paycheck-estimate');
     let earningsChart = null;
 
-    // NEW: Pull to Refresh Elements
     const pullToRefreshEl = document.getElementById('pull-to-refresh');
 
     // =============================
@@ -57,25 +52,50 @@ document.addEventListener('DOMContentLoaded', () => {
         currentFilter: 'all',
         payRates: { walmart: 16, canes: 14.25 },
         takeHomePercent: 87,
-        serverUrl: "", // Start with no default server URL
+        serverUrl: "",
         currentView: 'schedule'
     };
 
     // =============================
-    // INITIAL LOAD
+    // INITIAL LOAD & SSE SETUP
     // =============================
     function initialLoad() {
         if ('serviceWorker' in navigator) {
-            // Use a relative path for the service worker
             navigator.serviceWorker.register('service-worker.js')
                 .then(registration => console.log('Service Worker registered with scope:', registration.scope))
                 .catch(error => console.error('Service Worker registration failed:', error));
         }
         loadSettings();
         loadSchedule();
+        setupStatusStream();
         setInterval(updateNextShiftTicker, 60000);
         addTouchListeners();
     }
+
+    function setupStatusStream() {
+        if (!appState.serverUrl) {
+            console.log("No server URL set, skipping status stream.");
+            return;
+        }
+        
+        const eventSource = new EventSource(`${appState.serverUrl}/status-stream`);
+
+        eventSource.onmessage = function(event) {
+            const data = JSON.parse(event.data);
+            console.log("SSE Message:", data.message);
+            if (statusEl) {
+                statusEl.textContent = data.message;
+            }
+        };
+
+        eventSource.onerror = function(err) {
+            console.error("EventSource failed:", err);
+            statusEl.textContent = "Connection to server lost. Check settings.";
+            eventSource.close();
+            setTimeout(setupStatusStream, 5000);
+        };
+    }
+
 
     async function loadSchedule() {
         const savedUrl = appState.serverUrl;
@@ -171,9 +191,6 @@ document.addEventListener('DOMContentLoaded', () => {
         netPayHeaderEl.textContent = `~$${netPay.toFixed(2)}`;
     }
 
-    // =============================
-    // CALENDAR VIEW
-    // =============================
     function renderCalendarView() {
         const date = appState.selectedDate;
         const year = date.getFullYear();
@@ -215,9 +232,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // =============================
-    // SCHEDULE LIST VIEW
-    // =============================
     function renderScheduleList() {
         const date = appState.selectedDate;
         const year = date.getFullYear();
@@ -227,21 +241,26 @@ document.addEventListener('DOMContentLoaded', () => {
             return d.getFullYear() === year && d.getMonth() === month &&
                    (appState.currentFilter === 'all' || s.source === appState.currentFilter);
         });
+
         if (shiftsInMonth.length === 0) {
             scheduleListContainer.innerHTML = `<div class="shift-card"><p>No shifts for this filter in ${monthNameEl.textContent}.</p></div>`;
             return;
         }
+
         const shiftsByDay = shiftsInMonth.reduce((acc, shift) => {
             (acc[shift.date] = acc[shift.date] || []).push(shift);
             return acc;
         }, {});
+
         let listHTML = '';
         let currentWeek = -1;
         const sortedDays = Object.keys(shiftsByDay).sort();
+
         sortedDays.forEach(dateStr => {
             const dayShifts = shiftsByDay[dateStr];
             const d = parseYMDAsLocal(dateStr);
             const week = getWeekNumber(d);
+
             if (week !== currentWeek) {
                 if (currentWeek !== -1) {
                     const weekShifts = shiftsInMonth.filter(s => getWeekNumber(parseYMDAsLocal(s.date)) === currentWeek);
@@ -251,30 +270,35 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 currentWeek = week;
             }
+
             const dailyTotalPaidHours = dayShifts.reduce((sum, s) => sum + s.paidHours, 0);
             const dailyTotalNetPay = dayShifts.reduce((sum, s) => sum + s.netPay, 0);
             const sources = [...new Set(dayShifts.map(s => s.source))];
             const cardClass = sources.length > 1 ? 'multi' : sources[0] || '';
+            const hasDailyOverlap = dayShifts.some(s => s.hasOverlap);
+
             listHTML += `
                 <div id="shift-card-${dateStr}" class="shift-card ${cardClass}">
                     <div class="card-date">
                         <span class="weekday">${getShortWeekday(d)}</span>
                         <span class="day">${d.getDate()}</span>
+                        ${hasDailyOverlap ? '<span class="card-overlap-badge">OVERLAP</span>' : ''}
                     </div>
                     <div class="card-details">
                         <div class="job-info-container">`;
+            
             dayShifts.forEach(shift => {
                 listHTML += `
                     <div class="job-info">
                         <div class="job-title">
                             ${shift.job}
-                            ${shift.hasOverlap ? '<span class="overlap-badge">Overlap!</span>' : ''}
                         </div>
                         <div class="time-badge ${shift.source}">
                             <span>${shift.start} - ${shift.end} (${shift.paidHours.toFixed(2)}h paid)</span>
                         </div>
                     </div>`;
             });
+
             listHTML += `
                         </div>
                         <div class="card-hours">
@@ -284,18 +308,17 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                 </div>`;
         });
+
         if (currentWeek !== -1) {
             const lastWeekShifts = shiftsInMonth.filter(s => getWeekNumber(parseYMDAsLocal(s.date)) === currentWeek);
             const lastWeeklyPaidHours = lastWeekShifts.reduce((sum, s) => sum + s.paidHours, 0);
             const lastWeeklyNetPay = lastWeekShifts.reduce((sum, s) => sum + s.netPay, 0);
             listHTML += `<div class="shift-card week-summary"><strong>Week ${currentWeek} Total:</strong> ${lastWeeklyPaidHours.toFixed(2)}h Paid, ~$${lastWeeklyNetPay.toFixed(2)} Take-Home</div>`;
         }
+
         scheduleListContainer.innerHTML = listHTML;
     }
 
-    // =============================
-    // ANALYTICS VIEW
-    // =============================
     function renderAnalytics() {
         if (appState.allShifts.length === 0) {
             paycheckEstimateEl.innerHTML = `<p>No shift data to analyze.</p>`;
@@ -345,23 +368,25 @@ document.addEventListener('DOMContentLoaded', () => {
     // =============================
     // API & EVENT HANDLERS
     // =============================
+    
     async function startRefresh() {
         if (appState.waitingForResult) return;
         appState.waitingForResult = true;
         refreshBtn.classList.add('loading');
-        statusEl.textContent = 'Starting refresh...';
+        
         try {
-            const startRes = await fetch(`${appState.serverUrl}/schedule`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) });
-            const startJson = await startRes.json();
-            if (startJson.needs2FA) {
-                statusEl.textContent = 'Server requires 2FA code.';
+            const res = await fetch(`${appState.serverUrl}/schedule`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) });
+            const data = await res.json();
+
+            if (data.needs2FA) {
                 showModal(twoFaModal);
-            } else if (startJson.error) {
-                throw new Error(startJson.error);
-            } else {
-                saveToLocalStorage('scheduleData', startJson);
-                processAndRender(startJson);
+                return; 
             }
+            
+            if (data.error) throw new Error(data.error);
+
+            await loadSchedule();
+
         } catch (err) {
             console.error(err);
             statusEl.textContent = `Error: ${err.message}`;
@@ -375,13 +400,14 @@ document.addEventListener('DOMContentLoaded', () => {
         const code = twoFaInput.value.trim();
         if (!code) { alert('Please enter a 2FA code.'); return; }
         hideModal(twoFaModal);
-        statusEl.textContent = 'Submitting 2FA code...';
+        
         try {
             const res = await fetch(`${appState.serverUrl}/schedule`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ twoFACode: code }) });
             const data = await res.json();
             if (data.error) throw new Error(data.error);
-            saveToLocalStorage('scheduleData', data);
-            processAndRender(data);
+            
+            await loadSchedule();
+
         } catch (err) {
             console.error(err);
             statusEl.textContent = `Failed to fetch: ${err.message}`;
@@ -439,7 +465,7 @@ document.addEventListener('DOMContentLoaded', () => {
             renderScheduleList();
         });
     });
-    exportCsvBtn.addEventListener('click', () => { triggerHapticFeedback(); exportToCsv(); });
+    exportPdfBtn.addEventListener('click', () => { triggerHapticFeedback(); exportToPdf(); });
     settingsBtn.addEventListener('click', () => { triggerHapticFeedback(); showModal(settingsModal); });
     settingsCancelBtn.addEventListener('click', () => { triggerHapticFeedback(); hideModal(settingsModal); });
     
@@ -452,6 +478,7 @@ document.addEventListener('DOMContentLoaded', () => {
         appState.takeHomePercent = parseInt(takeHomePercentInput.value, 10) || 87;
         saveSettings();
         hideModal(settingsModal);
+        setupStatusStream();
         loadSchedule(); 
     });
 
@@ -474,9 +501,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // =============================
-    // TOUCH GESTURES
-    // =============================
     function addTouchListeners() {
         let touchStartX = 0, touchStartY = 0;
         const deadzone = 50;
@@ -525,7 +549,7 @@ document.addEventListener('DOMContentLoaded', () => {
             touchStartY = 0;
         });
     }
-
+    
     // =============================
     // HELPERS
     // =============================
@@ -611,11 +635,20 @@ document.addEventListener('DOMContentLoaded', () => {
     function detectOverlaps() {
         const shiftsByDate = appState.allShifts.reduce((acc, shift) => { (acc[shift.date] = acc[shift.date] || []).push(shift); return acc; }, {});
         for (const date in shiftsByDate) {
-            const dayShifts = shiftsByDate[date];
+            const dayShifts = shiftsByDate[date].sort((a,b) => parseTime(a.start) - parseTime(b.start));
             if (dayShifts.length < 2) continue;
             for(let i = 0; i < dayShifts.length - 1; i++) {
-                const currentEnd = parseTime(dayShifts[i].end); const nextStart = parseTime(dayShifts[i+1].start);
-                if (currentEnd > nextStart) { dayShifts[i].hasOverlap = true; dayShifts[i+1].hasOverlap = true; }
+                for (let j = i + 1; j < dayShifts.length; j++) {
+                    const endI = parseTime(dayShifts[i].end);
+                    const startJ = parseTime(dayShifts[j].start);
+                    const startI = parseTime(dayShifts[i].start);
+                    const endJ = parseTime(dayShifts[j].end);
+
+                    if (startI < endJ && endI > startJ) {
+                        dayShifts[i].hasOverlap = true;
+                        dayShifts[j].hasOverlap = true;
+                    }
+                }
             }
         }
     }
@@ -637,15 +670,93 @@ document.addEventListener('DOMContentLoaded', () => {
         } else if (nextShiftTickerEl) { nextShiftTickerEl.style.display = 'none'; }
     }
 
-    function exportToCsv() {
-        let csvContent = "data:text/csv;charset=utf-8,Date,Job,Start,End,Paid Hours,Gross Pay,Net Pay\n";
-        appState.allShifts.forEach(shift => {
-            const row = [shift.date, `"${shift.job}"`, shift.start, shift.end, shift.paidHours.toFixed(2), shift.grossPay.toFixed(2), shift.netPay.toFixed(2)].join(',');
-            csvContent += row + "\n";
+    function exportToPdf() {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF({ orientation: 'landscape' });
+
+        const date = appState.selectedDate;
+        const year = date.getFullYear();
+        const month = date.getMonth();
+        const monthName = date.toLocaleString('default', { month: 'long' });
+
+        // --- Get shifts for the current month ---
+        const shiftsInMonth = appState.allShifts.filter(s => {
+            const d = parseYMDAsLocal(s.date);
+            return d.getFullYear() === year && d.getMonth() === month;
         });
-        const encodedUri = encodeURI(csvContent); const link = document.createElement("a");
-        link.setAttribute("href", encodedUri); link.setAttribute("download", "my_schedule.csv");
-        document.body.appendChild(link); link.click(); document.body.removeChild(link);
+
+        const shiftsByDay = shiftsInMonth.reduce((acc, shift) => {
+            (acc[shift.date] = acc[shift.date] || []).push(shift);
+            return acc;
+        }, {});
+
+        // --- PDF Styling & Layout Variables ---
+        const pageW = doc.internal.pageSize.getWidth();
+        const pageH = doc.internal.pageSize.getHeight();
+        const margin = 10;
+        const cellW = (pageW - margin * 2) / 7;
+        const cellH = (pageH - margin * 2 - 20) / 6; // Adjusted for 6 rows
+        const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+        
+        // --- Document Title ---
+        doc.setFontSize(22);
+        doc.text(`Work Schedule: ${monthName} ${year}`, pageW / 2, margin + 5, { align: 'center' });
+
+        // --- Draw Calendar Grid & Headers ---
+        doc.setFontSize(10);
+        daysOfWeek.forEach((day, i) => {
+            doc.text(day, margin + (i * cellW) + (cellW / 2), margin + 18, { align: 'center' });
+        });
+
+        // --- Calendar Day Cells ---
+        const startOfMonth = new Date(year, month, 1);
+        const endOfMonth = new Date(year, month + 1, 0);
+        const totalDays = endOfMonth.getDate();
+        const firstWeekday = startOfMonth.getDay();
+        
+        let currentDay = 1;
+        for (let row = 0; row < 6; row++) {
+            for (let col = 0; col < 7; col++) {
+                if ((row === 0 && col < firstWeekday) || currentDay > totalDays) {
+                    continue; // Skip empty cells at the start/end of the month
+                }
+
+                const x = margin + col * cellW;
+                const y = margin + 22 + row * cellH;
+                
+                // Draw cell border
+                doc.rect(x, y, cellW, cellH);
+
+                // Draw day number
+                doc.setFontSize(12).setTextColor(0, 0, 0);
+                doc.text(String(currentDay), x + 2, y + 5);
+
+                // --- Check for shifts and add them ---
+                const currentDate = new Date(year, month, currentDay);
+                const dateStr = formatLocalDate(currentDate);
+                const dayShifts = shiftsByDay[dateStr];
+                
+                doc.setFontSize(8).setTextColor(100);
+                if (dayShifts && dayShifts.length > 0) {
+                    let yOffset = 10;
+                    dayShifts.forEach(shift => {
+                        if (y + yOffset < y + cellH - 2) { // Ensure text fits
+                           const jobColor = shift.source === 'walmart' ? '#0284c7' : '#dc2626';
+                           doc.setTextColor(jobColor);
+                           doc.text(`${shift.job}: ${shift.start}-${shift.end}`, x + 2, y + yOffset, { maxWidth: cellW - 4 });
+                           yOffset += 7;
+                        }
+                    });
+                } else {
+                    doc.setTextColor(150); // Lighter gray for "Day Off"
+                    doc.text("Day Off", x + cellW / 2, y + cellH / 2, { align: 'center' });
+                }
+
+                currentDay++;
+            }
+        }
+        
+        doc.output('dataurlnewwindow');
     }
 
     function saveToLocalStorage(key, value) { localStorage.setItem(key, JSON.stringify(value)); }
@@ -676,4 +787,3 @@ document.addEventListener('DOMContentLoaded', () => {
         takeHomePercentInput.value = appState.takeHomePercent || '0';
     }
 });
-
