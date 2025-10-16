@@ -101,37 +101,50 @@ document.addEventListener('DOMContentLoaded', () => {
         const savedUrl = appState.serverUrl;
         let loadedFromServer = false;
 
-        if (savedUrl && savedUrl.startsWith('http')) {
-            try {
-                statusEl.textContent = 'Fetching schedule from server...';
-                const res = await fetch(`${savedUrl}/combined_schedule`, { cache: 'no-store' });
-                if (!res.ok) throw new Error(`Server returned status: ${res.status}`);
-                const data = await res.json();
-                saveToLocalStorage('scheduleData', data);
-                processAndRender(data);
-                loadedFromServer = true;
-            } catch (err) {
-                console.warn(`Could not fetch from server (${savedUrl}):`, err.message);
-                statusEl.textContent = 'Server not found. Using local data.';
-            }
+        // First, try to load whatever is saved locally. This ensures that if the server
+        // is offline, we immediately show the last good data without waiting for a failed request.
+        const localData = getFromLocalStorage('scheduleData');
+        if (localData && localData.allShifts && localData.allShifts.length > 0) {
+            console.log("Displaying schedule from local storage first.");
+            processAndRender(localData);
+        } else {
+             renderEmptyState(); // Show empty state if nothing is stored
         }
 
-        if (!loadedFromServer) {
+
+        // Now, if a server URL is configured, try to fetch fresh data in the background.
+        if (savedUrl && savedUrl.startsWith('http')) {
             try {
-                statusEl.textContent = 'Loading saved/local schedule...';
-                const localData = getFromLocalStorage('scheduleData');
-                if (localData) {
-                    processAndRender(localData);
+                statusEl.textContent = 'Checking for schedule updates...';
+                const res = await fetch(`${savedUrl}/combined_schedule`, { cache: 'no-store' });
+                if (!res.ok) throw new Error(`Server returned status: ${res.status}`);
+
+                const serverData = await res.json();
+                
+                // CRITICAL FIX: Before saving, parse the shifts from the server data
+                const serverShifts = parseShifts(serverData);
+
+                // Only save and re-render if the server actually sent new shifts.
+                if (serverShifts.length > 0) {
+                    console.log("Server returned new shifts. Updating schedule.");
+                    // We save the raw data, but the decision is based on the parsed shifts
+                    saveToLocalStorage('scheduleData', serverData); 
+                    processAndRender(serverData); // Re-render the UI with the fresh data
+                    loadedFromServer = true;
+                    statusEl.textContent = 'Schedule updated from server.';
                 } else {
-                    const res = await fetch('combined_schedule.json');
-                    const data = await res.json();
-                    processAndRender(data);
+                    console.log("Server returned no shifts. Keeping existing local schedule.");
+                    statusEl.textContent = 'No new shifts found on server.';
                 }
             } catch (err) {
-                console.error('Failed to load local or fallback schedule:', err);
-                statusEl.textContent = 'No schedule found. Refresh or check settings.';
-                renderEmptyState();
+                console.warn(`Could not fetch from server (${savedUrl}):`, err.message);
+                statusEl.textContent = 'Server offline. Using saved schedule.';
             }
+        }
+        
+        // If there's no server URL, ensure the final status message makes sense.
+        if (!savedUrl) {
+           statusEl.textContent = localData ? 'Displaying saved schedule.' : 'No schedule found.';
         }
     }
 
@@ -787,3 +800,4 @@ document.addEventListener('DOMContentLoaded', () => {
         takeHomePercentInput.value = appState.takeHomePercent || '0';
     }
 });
+
